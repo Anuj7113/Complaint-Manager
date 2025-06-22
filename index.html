@@ -22,7 +22,6 @@
             background: #555;
         }
         
-        /* Animation for buttons */
         .btn-animate {
             transition: all 0.2s ease-in-out;
         }
@@ -30,8 +29,6 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        
-        /* Pulse animation for urgent items */
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
@@ -207,13 +204,8 @@
                 <!-- Customer Selection -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                    <select class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Select a customer</option>
-                        <option value="1">John Doe (STB-2456)</option>
-                        <option value="2">Sarah Miller (STB-3789)</option>
-                        <option value="3">Robert Taylor (STB-4567)</option>
-                        <option value="4">Lisa Wong (STB-5678)</option>
-                        <option value="5">Michael Brown (STB-6789)</option>
+                    <select id="customerSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Loading customers...</option>
                     </select>
                 </div>
                 
@@ -221,12 +213,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">STB Number</label>
-                        <input type="text" value="STB-2456" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md">
+                        <input id="stbNumber" type="text" value="" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Customer Location</label>
                         <div class="flex">
-                            <input type="text" value="Downtown Area" readonly class="flex-1 px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md">
+                            <input id="customerLocation" type="text" value="" readonly class="flex-1 px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md">
                             <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded-r-md flex items-center">
                                 <i class="material-icons text-sm">directions</i>
                                 <span class="ml-1">Go</span>
@@ -237,7 +229,7 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Customer Address</label>
-                    <textarea rows="2" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md">123 Main St, Apt 4B, Downtown, Cityville</textarea>
+                    <textarea id="customerAddress" rows="2" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md"></textarea>
                 </div>
                 
                 <!-- Complaint Details -->
@@ -299,37 +291,62 @@
             document.getElementById('dashboard').classList.add('hidden');
             document.getElementById('complaintForm').classList.remove('hidden');
         });
-        
         document.getElementById('closeFormBtn').addEventListener('click', function() {
             document.getElementById('dashboard').classList.remove('hidden');
             document.getElementById('complaintForm').classList.add('hidden');
         });
-        
         document.getElementById('cancelComplaintBtn').addEventListener('click', function() {
             document.getElementById('dashboard').classList.remove('hidden');
             document.getElementById('complaintForm').classList.add('hidden');
         });
-        
-        // Simulate loading customer data (in a real app, this would come from API)
-        const customerSelect = document.querySelector('select');
-        customerSelect.addEventListener('change', function() {
-            // In a real app, this would fetch customer details from your database
-            const customers = {
-                '1': { stb: 'STB-2456', address: '123 Main St, Apt 4B, Downtown, Cityville', location: 'Downtown Area' },
-                '2': { stb: 'STB-3789', address: '456 Oak Ave, Suite 12, Uptown, Cityville', location: 'Uptown Area' },
-                '3': { stb: 'STB-4567', address: '789 Pine Rd, Hillside, Cityville', location: 'Hillside Area' },
-                '4': { stb: 'STB-5678', address: '321 Elm Blvd, Riverside, Cityville', location: 'Riverside Area' },
-                '5': { stb: 'STB-6789', address: '654 Maple Ln, Parkside, Cityville', location: 'Parkside Area' }
-            };
-            
-            const selectedCustomer = customers[this.value];
-            if (selectedCustomer) {
-                document.querySelector('input[type="text"]').value = selectedCustomer.stb;
-                document.querySelector('textarea').value = selectedCustomer.address;
-                document.querySelector('input[readonly]').value = selectedCustomer.location;
+
+        // Fetch customer data from Google Sheets and populate dropdown
+        async function fetchCustomersFromSheet() {
+            const select = document.getElementById('customerSelect');
+            select.innerHTML = '<option value="">Loading customers...</option>';
+            try {
+                const res = await fetch('https://docs.google.com/spreadsheets/d/1JJTkkRTge4UGcAL3cUjliADULR_Cgj5Sc_S1j9Ou7S8/gviz/tq?tqx=out:json');
+                const text = await res.text();
+                const json = JSON.parse(text.match(/(?<=\().*(?=\);)/s)[0]);
+                const rows = json.table.rows;
+                select.innerHTML = '<option value="">Select a customer</option>';
+                // Assuming columns: Name | STB | Location | Address
+                for(let idx = 0; idx < rows.length; idx++) {
+                    // If your sheet has a header, skip the first row
+                    if(idx === 0 && rows[0].c[0].v && rows[0].c[0].v.toLowerCase().includes('name')) continue;
+                    const row = rows[idx];
+                    const [nameCell, stbCell, locationCell, addressCell] = row.c;
+                    // Some cells might be null
+                    const name = nameCell ? nameCell.v : '';
+                    const stb = stbCell ? stbCell.v : '';
+                    const location = locationCell ? locationCell.v : '';
+                    const address = addressCell ? addressCell.v : '';
+                    if(!name) continue;
+                    const option = document.createElement('option');
+                    option.value = idx;
+                    option.dataset.stb = stb;
+                    option.dataset.location = location;
+                    option.dataset.address = address;
+                    option.textContent = `${name} (${stb})`;
+                    select.appendChild(option);
+                }
+            } catch (e) {
+                select.innerHTML = '<option value="">Failed to load customers</option>';
             }
+        }
+        fetchCustomersFromSheet();
+
+        // Update autofill fields on selection
+        document.addEventListener('DOMContentLoaded', () => {
+            const select = document.getElementById('customerSelect');
+            select.addEventListener('change', function() {
+                const selected = this.options[this.selectedIndex];
+                document.getElementById('stbNumber').value = selected.dataset.stb || "";
+                document.getElementById('customerLocation').value = selected.dataset.location || "";
+                document.getElementById('customerAddress').value = selected.dataset.address || "";
+            });
         });
-        
+
         // Notification button
         document.getElementById('notifications').addEventListener('click', function() {
             alert('You have 3 pending notifications');
