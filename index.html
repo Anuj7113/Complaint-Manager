@@ -67,28 +67,28 @@
     <main class="container mx-auto px-4 py-6">
         <!-- Dashboard Section -->
         <section id="dashboard" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Main Action Buttons -->
-                <button id="registerComplaintBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-8 flex flex-col items-center justify-center btn-animate transform scale-105">
+            <!-- Register Complaint: Separate Row -->
+            <div class="mb-4">
+                <button id="registerComplaintBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-8 flex flex-col items-center justify-center btn-animate transform scale-105">
                     <i class="material-icons text-5xl mb-2">add_circle_outline</i>
                     <span class="text-xl font-medium">Register Complaint</span>
                 </button>
-                
+            </div>
+            <!-- Other dashboard cards: Next Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button class="bg-orange-500 hover:bg-orange-600 text-white rounded-lg p-6 flex flex-col items-center justify-center btn-animate">
                     <i class="material-icons text-4xl mb-2">pending_actions</i>
                     <span class="text-lg font-medium">Pending Complaints</span>
                     <span class="text-lg mt-2 bg-white text-orange-600 px-3 py-1 rounded-full font-bold">24 cases</span>
                 </button>
-                
                 <button class="bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg p-6 flex flex-col items-center justify-center btn-animate">
                     <i class="material-icons text-4xl mb-2">schedule</i>
-                    <span class="text-lg font-medium">Pending > 2 hours</span>
+                    <span class="text-lg font-medium">Pending &gt; 2 hours</span>
                     <span class="text-lg mt-2 bg-white text-yellow-600 px-3 py-1 rounded-full font-bold">12 cases</span>
                 </button>
-                
                 <button class="bg-red-500 hover:bg-red-600 text-white rounded-lg p-6 flex flex-col items-center justify-center btn-animate pulse">
                     <i class="material-icons text-4xl mb-2">warning</i>
-                    <span class="text-lg font-medium">Pending > 24 hours</span>
+                    <span class="text-lg font-medium">Pending &gt; 24 hours</span>
                     <span class="text-lg mt-2 bg-white text-red-600 px-3 py-1 rounded-full font-bold">5 cases</span>
                 </button>
             </div>
