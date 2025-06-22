@@ -298,11 +298,11 @@
                 const rows = json.table.rows;
                 select.innerHTML = '<option value="">Select a customer</option>';
                 for(let idx = 0; idx < rows.length; idx++) {
-                    // If your sheet has a header, skip the first row
-                    if(idx === 0 && rows[0].c[0] && rows[0].c[0].v && rows[0].c[0].v.toLowerCase().includes('stb')) continue;
+                    // Always skip the first row (header) regardless of its content/type
+                    if(idx === 0) continue;
                     const row = rows[idx];
                     if(!row.c) continue;
-                    const stb = row.c[0] && row.c[0].v ? row.c[0].v : '';
+                    const stb = row.c[0] && row.c[0].v !== undefined ? row.c[0].v : '';
                     const name = row.c[1] && row.c[1].v ? row.c[1].v : '';
                     const address = row.c[2] && row.c[2].v ? row.c[2].v : '';
                     const gps = row.c[3] && row.c[3].v ? row.c[3].v : '';
@@ -328,9 +328,9 @@
             const select = document.getElementById('customerSelect');
             select.addEventListener('change', function() {
                 const selected = this.options[this.selectedIndex];
-                document.getElementById('stbNumber').value = selected.dataset.stb || "";
-                document.getElementById('customerLocation').value = selected.dataset.gps || "";
-                document.getElementById('customerAddress').value = selected.dataset.address || "";
+                document.getElementById('stbNumber').value = selected && selected.dataset.stb ? selected.dataset.stb : "";
+                document.getElementById('customerLocation').value = selected && selected.dataset.gps ? selected.dataset.gps : "";
+                document.getElementById('customerAddress').value = selected && selected.dataset.address ? selected.dataset.address : "";
             });
         });
 
