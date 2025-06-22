@@ -307,13 +307,14 @@
                     const address = row.c[2] && row.c[2].v ? row.c[2].v : '';
                     const gps = row.c[3] && row.c[3].v ? row.c[3].v : '';
                     if(!name) continue;
+                    const display = stb ? `${name} (${stb})` : name;
                     const option = document.createElement('option');
                     option.value = idx;
                     option.dataset.stb = stb;
                     option.dataset.name = name;
                     option.dataset.address = address;
                     option.dataset.gps = gps;
-                    option.textContent = `${name} (${stb})`;
+                    option.textContent = display;
                     select.appendChild(option);
                 }
             } catch (e) {
