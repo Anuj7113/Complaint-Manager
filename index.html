@@ -199,7 +199,7 @@
 
         async function fetchCustomersFromSheet() {
             try {
-                const res = await fetch('https://script.google.com/macros/s/AKfycbxsip_Ul5jzyrJxCskXy2SzWkU-JTYxAO6sADkegGTttfPlwQoYKa_ATcxPhyRgNNji2g/exec');
+                const res = await fetch('https://script.google.com/macros/s/AKfycbwOfJySQMCqkVzAscQxhEMkFcf4Ej0XLOO73lDZBG0L3BSKcFa4UIODW1ZLYMlsuXaLSw/exec');
                 const text = await res.text();
                 const match = text.match(/(?<=\().*(?=\);)/s);
                 if (!match) return;
