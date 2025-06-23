@@ -1,113 +1,389 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Register Complaint</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <title>CableTV Complaint System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        ::-webkit-scrollbar {width: 8px;}
+        ::-webkit-scrollbar-track {background: #f1f1f1;}
+        ::-webkit-scrollbar-thumb {background: #888; border-radius: 4px;}
+        ::-webkit-scrollbar-thumb:hover {background: #555;}
+        .btn-animate {transition: all 0.2s ease-in-out;}
+        .btn-animate:hover {transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1);}
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .pulse {animation: pulse 2s infinite;}
+        .autocomplete-items {
+            position: absolute;
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ccc;
+            width: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .autocomplete-item:hover, .autocomplete-active {
+            background: #e2e8f0;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 p-4">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-4 text-center">CableTV Complaint Form</h2>
-    <form id="complaintForm" class="space-y-4">
-      <div>
-        <label class="block font-semibold">Customer Name</label>
-        <input type="text" id="customerName" class="w-full border rounded p-2" required />
-      </div>
-      <div>
-        <label class="block font-semibold">STB Number</label>
-        <input type="text" id="stbNumber" class="w-full border rounded p-2" required />
-      </div>
-      <div>
-        <label class="block font-semibold">Location</label>
-        <input type="text" id="location" class="w-full border rounded p-2" list="locationList" autocomplete="off" required />
-        <datalist id="locationList"></datalist>
-      </div>
-      <div>
-        <label class="block font-semibold">Address</label>
-        <textarea id="address" class="w-full border rounded p-2" rows="2" required></textarea>
-      </div>
-      <div>
-        <label class="block font-semibold">Complaint Type</label>
-        <select id="complaintType" class="w-full border rounded p-2" required>
-          <option value="">Select a type</option>
-          <option value="No Signal">No Signal</option>
-          <option value="Low Quality">Low Quality</option>
-          <option value="Payment Issue">Payment Issue</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-      <div>
-        <label class="block font-semibold">Comments</label>
-        <textarea id="comments" class="w-full border rounded p-2" rows="2"></textarea>
-      </div>
-      <div>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit Complaint</button>
-      </div>
-      <div id="statusMessage" class="text-center mt-4 text-green-600 hidden">Complaint submitted successfully!</div>
-    </form>
-  </div>
+<body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="material-icons text-2xl">tv</i>
+                <h1 class="text-xl font-bold">CableTV Complaint System</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="notifications" class="relative">
+                    <i class="material-icons">notifications</i>
+                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <img src="https://ui-avatars.com/api/?name=Tech+Support&background=random" alt="User" class="w-8 h-8 rounded-full">
+                    <span class="hidden md:inline">Tech Support</span>
+                </div>
+            </div>
+        </div>
+    </header>
 
-  <script>
-    const locationInput = document.getElementById("location");
-    const locationList = document.getElementById("locationList");
-    const locations = [
-      "Sakoli", "Bhandara", "Gondia", "Tumsar", "Lakhni", "Pauni", "Lakhandur", "Nagzira", "Deori", "Soundad"
-    ];
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="space-y-6">
+            <!-- Register Complaint: Separate Row -->
+            <div class="mb-4">
+                <button id="registerComplaintBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-8 flex flex-col items-center justify-center btn-animate transform scale-105">
+                    <i class="material-icons text-5xl mb-2">add_circle_outline</i>
+                    <span class="text-xl font-medium">Register Complaint</span>
+                </button>
+            </div>
+            <!-- Other dashboard cards: Next Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button class="bg-orange-500 hover:bg-orange-600 text-white rounded-lg p-6 flex flex-col items-center justify-center btn-animate">
+                    <i class="material-icons text-4xl mb-2">pending_actions</i>
+                    <span class="text-lg font-medium">Pending Complaints</span>
+                    <span class="text-lg mt-2 bg-white text-orange-600 px-3 py-1 rounded-full font-bold">24 cases</span>
+                </button>
+                <button class="bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg p-6 flex flex-col items-center justify-center btn-animate">
+                    <i class="material-icons text-4xl mb-2">schedule</i>
+                    <span class="text-lg font-medium">Pending &gt; 2 hours</span>
+                    <span class="text-lg mt-2 bg-white text-yellow-600 px-3 py-1 rounded-full font-bold">12 cases</span>
+                </button>
+                <button class="bg-red-500 hover:bg-red-600 text-white rounded-lg p-6 flex flex-col items-center justify-center btn-animate pulse">
+                    <i class="material-icons text-4xl mb-2">warning</i>
+                    <span class="text-lg font-medium">Pending &gt; 24 hours</span>
+                    <span class="text-lg mt-2 bg-white text-red-600 px-3 py-1 rounded-full font-bold">5 cases</span>
+                </button>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h3 class="text-lg font-medium text-gray-700 mb-4 flex items-center">
+                        <i class="material-icons text-blue-500 mr-2">today</i>
+                        Today's Stats
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-blue-50 rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Complaints</span>
+                                <span class="text-blue-600 font-bold text-xl">24</span>
+                            </div>
+                            <div class="mt-2 h-2 bg-blue-200 rounded-full">
+                                <div class="h-2 bg-blue-500 rounded-full" style="width: 70%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Resolved</span>
+                                <span class="text-green-600 font-bold text-xl">18</span>
+                            </div>
+                            <div class="mt-2 h-2 bg-green-200 rounded-full">
+                                <div class="h-2 bg-green-500 rounded-full" style="width: 75%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h3 class="text-lg font-medium text-gray-700 mb-4 flex items-center">
+                        <i class="material-icons text-purple-500 mr-2">date_range</i>
+                        This Week's Stats
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-purple-50 rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Complaints</span>
+                                <span class="text-purple-600 font-bold text-xl">156</span>
+                            </div>
+                            <div class="mt-2 h-2 bg-purple-200 rounded-full">
+                                <div class="h-2 bg-purple-500 rounded-full" style="width: 60%"></div>
+                            </div>
+                        </div>
+                        <div class="bg-teal-50 rounded-lg p-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Resolved</span>
+                                <span class="text-teal-600 font-bold text-xl">132</span>
+                            </div>
+                            <div class="mt-2 h-2 bg-teal-200 rounded-full">
+                                <div class="h-2 bg-teal-500 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h3 class="text-lg font-medium text-gray-700 mb-4 flex items-center">
+                    <i class="material-icons text-gray-500 mr-2">history</i>
+                    Recent Activity
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-start p-2 hover:bg-gray-50 rounded">
+                        <div class="bg-green-100 p-2 rounded-full mr-3">
+                            <i class="material-icons text-green-600 text-sm">check_circle</i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium">Complaint #CT-245 resolved</p>
+                            <p class="text-xs text-gray-500">No signal issue for customer John D.</p>
+                        </div>
+                        <span class="text-xs text-gray-400">10 min ago</span>
+                    </div>
+                    <div class="flex items-start p-2 hover:bg-gray-50 rounded">
+                        <div class="bg-blue-100 p-2 rounded-full mr-3">
+                            <i class="material-icons text-blue-600 text-sm">add</i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium">New complaint registered</p>
+                            <p class="text-xs text-gray-500">Billing error for customer Sarah M.</p>
+                        </div>
+                        <span class="text-xs text-gray-400">25 min ago</span>
+                    </div>
+                    <div class="flex items-start p-2 hover:bg-gray-50 rounded">
+                        <div class="bg-yellow-100 p-2 rounded-full mr-3">
+                            <i class="material-icons text-yellow-600 text-sm">schedule</i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium">Complaint pending for 2+ hours</p>
+                            <p class="text-xs text-gray-500">Audio issue for customer Robert T.</p>
+                        </div>
+                        <span class="text-xs text-gray-400">2 hours ago</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Complaint Form Section (Hidden by default) -->
+        <section id="complaintForm" class="hidden bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                    <i class="material-icons text-blue-500 mr-2">assignment</i>
+                    Register New Complaint
+                </h2>
+                <button id="closeFormBtn" class="text-gray-500 hover:text-gray-700">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            
+            <form class="space-y-4" autocomplete="off">
+                <!-- Customer Search -->
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                    <input id="customerSearchInput" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Type to search customer name..." autocomplete="off">
+                    <div id="customerAutocompleteList" class="autocomplete-items hidden"></div>
+                </div>
+                
+                <!-- Auto-filled details -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">STB Number</label>
+                        <input id="stbNumber" type="text" value="" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer Location (GPS)</label>
+                        <input id="customerLocation" type="text" value="" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Customer Address</label>
+                    <textarea id="customerAddress" rows="2" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md"></textarea>
+                </div>
+                
+                <!-- Complaint Details -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Complaint Type</label>
+                    <select class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Select complaint type</option>
+                        <option value="no_signal">No Signal</option>
+                        <option value="audio_issue">Audio Issue</option>
+                        <option value="video_issue">Video Issue</option>
+                        <option value="billing_error">Billing Error</option>
+                        <option value="stb_issue">STB Not Working</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Comments (Optional)</label>
+                    <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Add any additional details..."></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="cancelComplaintBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Submit Complaint
+                    </button>
+                </div>
+            </form>
+        </section>
+    </main>
 
-    // Populate datalist
-    function populateLocations(filter = "") {
-      locationList.innerHTML = "";
-      const filtered = locations.filter(loc => loc.toLowerCase().includes(filter.toLowerCase()));
-      filtered.forEach(loc => {
-        const option = document.createElement("option");
-        option.value = loc;
-        locationList.appendChild(option);
-      });
-    }
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200">
+        <div class="flex justify-around">
+            <a href="#" class="flex flex-col items-center py-2 px-4 text-blue-600">
+                <i class="material-icons">home</i>
+                <span class="text-xs mt-1">Home</span>
+            </a>
+            <a href="#" class="flex flex-col items-center py-2 px-4 text-gray-500">
+                <i class="material-icons">pending_actions</i>
+                <span class="text-xs mt-1">Pending</span>
+            </a>
+            <a href="#" class="flex flex-col items-center py-2 px-4 text-gray-500">
+                <i class="material-icons">history</i>
+                <span class="text-xs mt-1">History</span>
+            </a>
+            <a href="#" class="flex flex-col items-center py-2 px-4 text-gray-500">
+                <i class="material-icons">person</i>
+                <span class="text-xs mt-1">Profile</span>
+            </a>
+        </div>
+    </nav>
 
-    locationInput.addEventListener("input", () => {
-      populateLocations(locationInput.value);
-    });
-
-    // Initial load
-    populateLocations();
-
-    // Form submission logic
-    document.getElementById("complaintForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const data = {
-        customerName: document.getElementById("customerName").value.trim(),
-        stbNumber: document.getElementById("stbNumber").value.trim(),
-        location: document.getElementById("location").value.trim(),
-        address: document.getElementById("address").value.trim(),
-        complaintType: document.getElementById("complaintType").value,
-        comments: document.getElementById("comments").value.trim(),
-      };
-
-      try {
-        const res = await fetch("https://script.google.com/macros/s/AKfycbz7IuJLdGP2rmQWzzLFVFVZqIuWv7k23tjDPCyOOKBaq0l7YI0ufgFLCTpiTIfrx5vWuw/exec", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data)
+    <script>
+        // Toggle complaint form visibility
+        document.getElementById('registerComplaintBtn').addEventListener('click', function() {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('complaintForm').classList.remove('hidden');
+        });
+        document.getElementById('closeFormBtn').addEventListener('click', function() {
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('complaintForm').classList.add('hidden');
+        });
+        document.getElementById('cancelComplaintBtn').addEventListener('click', function() {
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('complaintForm').classList.add('hidden');
         });
 
-        const result = await res.json();
+        // --- Customer Data Fetch and Autocomplete ---
+        let customerList = [];
+        let customerMap = {}; // name(lowercase) -> customer object
 
-        if (result.result === "success") {
-          document.getElementById("statusMessage").classList.remove("hidden");
-          document.getElementById("complaintForm").reset();
-        } else {
-          alert("Something went wrong. Please try again.");
+        async function fetchCustomersFromSheet() {
+            try {
+                const res = await fetch('https://docs.google.com/spreadsheets/d/1JJTkkRTge4UGcAL3cUjliADULR_Cgj5Sc_S1j9Ou7S8/gviz/tq?tqx=out:json');
+                const text = await res.text();
+                const match = text.match(/(?<=\().*(?=\);)/s);
+                if (!match) return;
+                const json = JSON.parse(match[0]);
+                const rows = json.table.rows;
+                customerList = [];
+                customerMap = {};
+                for(let idx = 0; idx < rows.length; idx++) {
+                    if(idx === 0) continue; // skip header
+                    const row = rows[idx];
+                    if(!row.c) continue;
+                    const stb = row.c[0] && row.c[0].v !== undefined ? row.c[0].v : '';
+                    const name = row.c[1] && row.c[1].v ? row.c[1].v : '';
+                    const address = row.c[2] && row.c[2].v ? row.c[2].v : '';
+                    const gps = row.c[3] && row.c[3].v ? row.c[3].v : '';
+                    if(!name) continue;
+                    const customer = {stb, name, address, gps};
+                    customerList.push(customer);
+                    customerMap[name.toLowerCase()] = customer;
+                }
+            } catch (e) {
+                // Fail silently or show error
+            }
         }
-      } catch (err) {
-        console.error(err);
-        alert("Failed to submit complaint. Try again later.");
-      }
-    });
-  </script>
+        fetchCustomersFromSheet();
+
+        // --- Autocomplete Logic ---
+        function setupCustomerAutocomplete() {
+            const input = document.getElementById('customerSearchInput');
+            const list = document.getElementById('customerAutocompleteList');
+            input.addEventListener('input', function() {
+                const val = this.value.trim().toLowerCase();
+                list.innerHTML = '';
+                if (!val) {
+                    list.classList.add('hidden');
+                    return;
+                }
+                const matches = customerList.filter(c => c.name.toLowerCase().includes(val));
+                if (matches.length === 0) {
+                    list.classList.add('hidden');
+                    return;
+                }
+                matches.slice(0, 20).forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.textContent = c.name;
+                    item.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        input.value = c.name;
+                        fillCustomerDetails(c);
+                        list.innerHTML = '';
+                        list.classList.add('hidden');
+                    });
+                    list.appendChild(item);
+                });
+                list.classList.remove('hidden');
+            });
+
+            // Hide dropdown on blur, but allow click to select
+            input.addEventListener('blur', function() {
+                setTimeout(() => { list.classList.add('hidden'); }, 150);
+            });
+        }
+
+        function fillCustomerDetails(customer) {
+            document.getElementById('stbNumber').value = customer.stb || "";
+            document.getElementById('customerLocation').value = customer.gps || "";
+            document.getElementById('customerAddress').value = customer.address || "";
+        }
+
+        // Autofill when input loses focus and matches a unique name
+        document.addEventListener('DOMContentLoaded', function() {
+            setupCustomerAutocomplete();
+
+            const input = document.getElementById('customerSearchInput');
+            input.addEventListener('change', function() {
+                const val = this.value.trim().toLowerCase();
+                const customer = customerMap[val];
+                if (customer) fillCustomerDetails(customer);
+            });
+        });
+
+        // Notification button
+        document.getElementById('notifications').addEventListener('click', function() {
+            alert('You have 3 pending notifications');
+        });
+    </script>
 </body>
 </html>
