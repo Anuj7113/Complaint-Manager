@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CableTV Complaint System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -19,6 +19,22 @@
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         .pulse {animation: pulse 2s infinite;}
+        .autocomplete-items {
+            position: absolute;
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ccc;
+            width: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .autocomplete-item:hover, .autocomplete-active {
+            background: #e2e8f0;
+        }
     </style>
 </head>
 <body class="bg-gray-50 font-sans">
@@ -182,13 +198,12 @@
                 </button>
             </div>
             
-            <form class="space-y-4">
-                <!-- Customer Selection -->
-                <div>
+            <form class="space-y-4" autocomplete="off">
+                <!-- Customer Search -->
+                <div class="relative">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                    <select id="customerSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Loading customers...</option>
-                    </select>
+                    <input id="customerSearchInput" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Type to search customer name..." autocomplete="off">
+                    <div id="customerAutocompleteList" class="autocomplete-items hidden"></div>
                 </div>
                 
                 <!-- Auto-filled details -->
@@ -199,13 +214,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Customer Location (GPS)</label>
-                        <div class="flex">
-                            <input id="customerLocation" type="text" value="" readonly class="flex-1 px-3 py-2 bg-gray-100 border border-gray-300 rounded-l-md">
-                            <button type="button" id="goToLocation" class="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded-r-md flex items-center">
-                                <i class="material-icons text-sm">directions</i>
-                                <span class="ml-1">Go</span>
-                            </button>
-                        </div>
+                        <input id="customerLocation" type="text" value="" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md">
                     </div>
                 </div>
                 
@@ -282,24 +291,22 @@
             document.getElementById('complaintForm').classList.add('hidden');
         });
 
-        // Fetch customer data from Google Sheets and populate dropdown
+        // --- Customer Data Fetch and Autocomplete ---
+        let customerList = [];
+        let customerMap = {}; // name(lowercase) -> customer object
+
         async function fetchCustomersFromSheet() {
-            const select = document.getElementById('customerSelect');
-            select.innerHTML = '<option value="">Loading customers...</option>';
             try {
                 const res = await fetch('https://docs.google.com/spreadsheets/d/1JJTkkRTge4UGcAL3cUjliADULR_Cgj5Sc_S1j9Ou7S8/gviz/tq?tqx=out:json');
                 const text = await res.text();
                 const match = text.match(/(?<=\().*(?=\);)/s);
-                if (!match) { 
-                    select.innerHTML = '<option value="">Failed to load customers</option>';
-                    return; 
-                }
+                if (!match) return;
                 const json = JSON.parse(match[0]);
                 const rows = json.table.rows;
-                select.innerHTML = '<option value="">Select a customer</option>';
+                customerList = [];
+                customerMap = {};
                 for(let idx = 0; idx < rows.length; idx++) {
-                    // Always skip the first row (header) regardless of its content/type
-                    if(idx === 0) continue;
+                    if(idx === 0) continue; // skip header
                     const row = rows[idx];
                     if(!row.c) continue;
                     const stb = row.c[0] && row.c[0].v !== undefined ? row.c[0].v : '';
@@ -307,39 +314,70 @@
                     const address = row.c[2] && row.c[2].v ? row.c[2].v : '';
                     const gps = row.c[3] && row.c[3].v ? row.c[3].v : '';
                     if(!name) continue;
-                    const display = stb ? `${name} (${stb})` : name;
-                    const option = document.createElement('option');
-                    option.value = idx;
-                    option.dataset.stb = stb;
-                    option.dataset.name = name;
-                    option.dataset.address = address;
-                    option.dataset.gps = gps;
-                    option.textContent = display;
-                    select.appendChild(option);
+                    const customer = {stb, name, address, gps};
+                    customerList.push(customer);
+                    customerMap[name.toLowerCase()] = customer;
                 }
             } catch (e) {
-                select.innerHTML = '<option value="">Failed to load customers</option>';
+                // Fail silently or show error
             }
         }
         fetchCustomersFromSheet();
 
-        // Update autofill fields on selection
-        document.addEventListener('DOMContentLoaded', () => {
-            const select = document.getElementById('customerSelect');
-            select.addEventListener('change', function() {
-                const selected = this.options[this.selectedIndex];
-                document.getElementById('stbNumber').value = selected && selected.dataset.stb ? selected.dataset.stb : "";
-                document.getElementById('customerLocation').value = selected && selected.dataset.gps ? selected.dataset.gps : "";
-                document.getElementById('customerAddress').value = selected && selected.dataset.address ? selected.dataset.address : "";
+        // --- Autocomplete Logic ---
+        function setupCustomerAutocomplete() {
+            const input = document.getElementById('customerSearchInput');
+            const list = document.getElementById('customerAutocompleteList');
+            input.addEventListener('input', function() {
+                const val = this.value.trim().toLowerCase();
+                list.innerHTML = '';
+                if (!val) {
+                    list.classList.add('hidden');
+                    return;
+                }
+                const matches = customerList.filter(c => c.name.toLowerCase().includes(val));
+                if (matches.length === 0) {
+                    list.classList.add('hidden');
+                    return;
+                }
+                matches.slice(0, 20).forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.textContent = c.name;
+                    item.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        input.value = c.name;
+                        fillCustomerDetails(c);
+                        list.innerHTML = '';
+                        list.classList.add('hidden');
+                    });
+                    list.appendChild(item);
+                });
+                list.classList.remove('hidden');
             });
-        });
 
-        // "Go" button to open GPS in Google Maps
-        document.getElementById('goToLocation').addEventListener('click', function() {
-            const gps = document.getElementById('customerLocation').value;
-            if(gps) {
-                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(gps)}`);
-            }
+            // Hide dropdown on blur, but allow click to select
+            input.addEventListener('blur', function() {
+                setTimeout(() => { list.classList.add('hidden'); }, 150);
+            });
+        }
+
+        function fillCustomerDetails(customer) {
+            document.getElementById('stbNumber').value = customer.stb || "";
+            document.getElementById('customerLocation').value = customer.gps || "";
+            document.getElementById('customerAddress').value = customer.address || "";
+        }
+
+        // Autofill when input loses focus and matches a unique name
+        document.addEventListener('DOMContentLoaded', function() {
+            setupCustomerAutocomplete();
+
+            const input = document.getElementById('customerSearchInput');
+            input.addEventListener('change', function() {
+                const val = this.value.trim().toLowerCase();
+                const customer = customerMap[val];
+                if (customer) fillCustomerDetails(customer);
+            });
         });
 
         // Notification button
