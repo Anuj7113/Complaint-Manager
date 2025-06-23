@@ -180,8 +180,10 @@
     </nav>
 
     <script>
-        // Your Google Apps Script Web App URL
+        // Your Google Apps Script Web App URL (for complaints)
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlD_z8OplxefH29xCw8Zxcia78JI3qxLmlUGyVp_luLbXDbeseoqpZIZ7HQdastbzufA/exec";
+        // Customer master sheet endpoint (must return JSON array of customers!)
+        const CUSTOMER_URL = "https://script.google.com/macros/s/AKfycbwOfJySQMCqkVzAscQxhEMkFcf4Ej0XLOO73lDZBG0L3BSKcFa4UIODW1ZLYMlsuXaLSw/exec";
 
         // Show/hide complaint form
         document.getElementById('registerComplaintBtn').onclick = function() {
@@ -197,36 +199,24 @@
         let customerList = [];
         let customerMap = {};
 
+        // Fetch customers: expects JSON array with {stb, name, address, gps}
         async function fetchCustomersFromSheet() {
             try {
-                const res = await fetch('https://script.google.com/macros/s/AKfycbwOfJySQMCqkVzAscQxhEMkFcf4Ej0XLOO73lDZBG0L3BSKcFa4UIODW1ZLYMlsuXaLSw/exec');
-                const text = await res.text();
-                const match = text.match(/(?<=\().*(?=\);)/s);
-                if (!match) return;
-                const json = JSON.parse(match[0]);
-                const rows = json.table.rows;
+                const res = await fetch(CUSTOMER_URL);
+                const data = await res.json();
                 customerList = [];
                 customerMap = {};
-                for(let idx = 0; idx < rows.length; idx++) {
-                    if(idx === 0) continue; // skip header
-                    const row = rows[idx];
-                    if(!row.c) continue;
-                    const stb = row.c[0] && row.c[0].v !== undefined ? row.c[0].v : '';
-                    const name = row.c[1] && row.c[1].v ? row.c[1].v : '';
-                    const address = row.c[2] && row.c[2].v ? row.c[2].v : '';
-                    const gps = row.c[3] && row.c[3].v ? row.c[3].v : '';
-                    if(!name) continue;
-                    const customer = {stb, name, address, gps};
+                data.forEach(customer => {
+                    if(!customer.name) return;
                     customerList.push(customer);
-                    customerMap[name.toLowerCase()] = customer;
-                }
+                    customerMap[customer.name.trim().toLowerCase()] = customer;
+                });
             } catch (e) {
-                // Fail silently or show error
+                // Optionally show an error
             }
         }
-        fetchCustomersFromSheet();
 
-        // Autocomplete logic
+        // Autocomplete logic (modern, always fresh)
         function setupCustomerAutocomplete() {
             const input = document.getElementById('customerSearchInput');
             const list = document.getElementById('customerAutocompleteList');
@@ -268,7 +258,7 @@
             document.getElementById('customerAddress').value = customer.address || "";
         }
         document.addEventListener('DOMContentLoaded', function() {
-            setupCustomerAutocomplete();
+            fetchCustomersFromSheet().then(setupCustomerAutocomplete);
             const input = document.getElementById('customerSearchInput');
             input.addEventListener('change', function() {
                 const val = this.value.trim().toLowerCase();
@@ -315,7 +305,7 @@
                     })
                 });
                 const result = await res.json();
-                if (result.result === "success") {
+                if (result.result && result.result.toLowerCase() === "success") {
                     alert('Complaint registered successfully!');
                     // Hide form and reload pending complaints
                     document.getElementById('dashboard').classList.remove('hidden');
