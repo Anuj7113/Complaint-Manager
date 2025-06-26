@@ -403,20 +403,21 @@
             }
 
             // Submit to Google Apps Script
-            try {
-                const res = await fetch('https://script.google.com/macros/s/AKfycbwrDx0Z-W_xkGFsqa6Aqq1g5Czx6ut7C_OpO_9SZtF-Cqb9HZxzUffbdd2kenSlDBAt/exec', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        customerName,
-                        stbNumber,
-                        location,
-                        address,
-                        complaintType,
-                        comments
-                    })
-                });
-                const resultText = await res.text();
+            await fetch('https://script.google.com/macros/s/AKfycbwrDx0Z-W_xkGFsqa6Aqq1g5Czx6ut7C_OpO_9SZtF-Cqb9HZxzUffbdd2kenSlDBAt/exec', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    customerName,
+    stbNumber,
+    location,
+    address,
+    complaintType,
+    comments
+  })
+});
+
                 // Because Apps Script may return plain text
                 if (resultText.toLowerCase().includes("success")) {
                     alert('Complaint registered successfully!');
